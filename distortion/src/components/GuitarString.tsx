@@ -3,12 +3,12 @@ import * as Tone from 'tone';
 
 type GuitarStringProps = {
   baseNote: string;
-  pick: boolean;
+  strum: boolean;
   distortion: number;
   volume: number;
 };
 
-const GuitarString = ({ baseNote, pick, distortion, volume }: GuitarStringProps) => {
+const GuitarString = ({ baseNote, strum, distortion, volume }: GuitarStringProps) => {
   const canvasRef = useRef<any>(null);
   const outputCanvasRef = useRef<any>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -101,19 +101,23 @@ const GuitarString = ({ baseNote, pick, distortion, volume }: GuitarStringProps)
     analyser.fftSize = 4096;
     monoSynthRef.current.connect(analyser);
     drawSineWave(analyser);
+    drawString(canvasRef.current, canvasRef.current.getContext('2d'), {
+        x: 0,
+        y: 0,
+    });
 
     return () => {
       monoSynthRef.current?.dispose();
       gainRef.current?.dispose();
     };
-  }, [baseNote, distortion, volume]);
+  }, [baseNote, distortion, volume, strum]);
 
   const drawString = (canvas: any, ctx: any, position: any) => {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.beginPath();
     ctx.moveTo(0, canvas.height / 2);
 
-    if (isDragging || pick) {
+    if (isDragging || strum) {
       ctx.quadraticCurveTo(
         position.x,
         position.y,
@@ -130,7 +134,7 @@ const GuitarString = ({ baseNote, pick, distortion, volume }: GuitarStringProps)
   };
 
   const handleMouseMove = (e: any) => {
-    if (!isDragging && !pick) return;
+    if (!isDragging && !strum) return;
 
     const rect = canvasRef.current?.getBoundingClientRect();
     const x = e.clientX - rect.left;
@@ -141,7 +145,7 @@ const GuitarString = ({ baseNote, pick, distortion, volume }: GuitarStringProps)
     const ctx = canvasRef.current.getContext('2d');
     drawString(canvasRef.current, ctx, { x, y });
 
-    if (pick) {
+    if (strum) {
         monoSynthRef.current?.triggerAttackRelease(baseNote, "4n", "+0.05");
     }
   };
@@ -163,7 +167,7 @@ const GuitarString = ({ baseNote, pick, distortion, volume }: GuitarStringProps)
   const handleMouseUp = () => {
 
     // check if the mouseup is triggered by mouseleave
-    if (!isDragging && !pick) return;
+    if (!isDragging && !strum) return;
     setIsDragging(false);
 
     const dragDistance = Math.abs(mousePosition.y - canvasRef.current.height / 2);
@@ -171,7 +175,7 @@ const GuitarString = ({ baseNote, pick, distortion, volume }: GuitarStringProps)
     if (gainRef.current) {
         gainRef.current.gain.value = volume;
     }
-    if (!pick) {
+    if (!strum) {
         monoSynthRef.current?.triggerAttackRelease(baseNote, "4n", "+0.1");
     }
   };
@@ -191,7 +195,7 @@ const GuitarString = ({ baseNote, pick, distortion, volume }: GuitarStringProps)
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
       onMouseLeave={handleMouseUp}
-      className="string-canvas"
+      className={`string-canvas ${ strum ? 'strum-cursor' : 'finger-cursor'}`}
     ></canvas>
     <canvas
       ref={outputCanvasRef}
