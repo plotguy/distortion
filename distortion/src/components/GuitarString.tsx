@@ -8,11 +8,55 @@ type GuitarStringProps = {
 
 const GuitarString = ({ baseNote, pick }: GuitarStringProps) => {
   const canvasRef = useRef<any>(null);
+  const outputCanvasRef = useRef<any>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
 
   const monoSynthRef = useRef<Tone.MonoSynth | null>(null);
   const gainRef = useRef<Tone.Gain | null>(null);
+
+
+  const drawSineWave = (analyser: AnalyserNode) => {
+    const canvas = outputCanvasRef.current;
+    const ctx = canvas.getContext('2d');
+    const bufferLength = analyser.frequencyBinCount;
+    const dataArray = new Uint8Array(bufferLength);
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    const draw = () => {
+      analyser.getByteTimeDomainData(dataArray);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = 'rgb(0, 50, 0, 0.3)';
+
+      ctx.beginPath();
+
+      const sliceWidth = (canvas.width * 1.0) / bufferLength;
+      let x = 0;
+
+      for (let i = 0; i < bufferLength; i++) {
+        const v = dataArray[i] / 128.0;
+        const y = v * canvas.height / 2;
+
+        if (i === 0) {
+          ctx.moveTo(x, y);
+        } else {
+          ctx.lineTo(x, y);
+        }
+
+        x += sliceWidth;
+      }
+
+      ctx.lineTo(canvas.width, canvas.height / 2);
+      ctx.stroke();
+
+      requestAnimationFrame(draw);
+    };
+
+    draw();
+  };
 
   useEffect(() => {
     gainRef.current = new Tone.Gain(0).toDestination();
@@ -46,6 +90,12 @@ const GuitarString = ({ baseNote, pick }: GuitarStringProps) => {
         }
     ).connect(gainRef.current);
 
+    Tone.Transport.start();
+    const analyser = Tone.context.createAnalyser();
+    analyser.fftSize = 4096;
+    monoSynthRef.current.connect(analyser);
+    drawSineWave(analyser);
+
     return () => {
       monoSynthRef.current?.dispose();
       gainRef.current?.dispose();
@@ -74,28 +124,19 @@ const GuitarString = ({ baseNote, pick }: GuitarStringProps) => {
   };
 
   const handleMouseMove = (e: any) => {
-    // console.log('inside mouse move');
-    // console.log(isDragging);
     if (!isDragging && !pick) return;
-
-    // console.log("Inside mouse move!");
 
     const rect = canvasRef.current?.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
-
-    console.log(x,y);
 
     setMousePosition({ x, y });
 
     const ctx = canvasRef.current.getContext('2d');
     drawString(canvasRef.current, ctx, { x, y });
 
-    const pitchBend = Math.abs(y - canvasRef.current.height / 2);
-    const frequency = baseNote // + pitchBend * 2;
-    // monoSynthRef.current.frequency.value = frequency;
     if (pick) {
-        monoSynthRef.current?.triggerAttackRelease(frequency, "4n", "+0.1");
+        monoSynthRef.current?.triggerAttackRelease(baseNote, "4n", "+0.1");
     }
   };
 
@@ -108,14 +149,12 @@ const GuitarString = ({ baseNote, pick }: GuitarStringProps) => {
     // if the y is not in the middle of the canvas, return
     if (y < canvasRef.current.height / 2 - 10 || y > canvasRef.current.height / 2 + 10) return;
 
-    console.log(x,y);
 
     setMousePosition({ x, y });
     setIsDragging(true);
   };
 
   const handleMouseUp = () => {
-    console.log('inside mouseup!');
 
     // check if the mouseup is triggered by mouseleave
     if (!isDragging && !pick) return;
@@ -137,9 +176,10 @@ const GuitarString = ({ baseNote, pick }: GuitarStringProps) => {
   }, [isDragging, mousePosition]);
 
   return (
+    <div className="flex flex-row">
     <canvas
       ref={canvasRef}
-      width="400"
+      width="500"
       height="70"
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
@@ -147,6 +187,13 @@ const GuitarString = ({ baseNote, pick }: GuitarStringProps) => {
       onMouseLeave={handleMouseUp}
       className="string-canvas"
     ></canvas>
+    <canvas
+      ref={outputCanvasRef}
+      width="500"
+      height="70"
+      className="string-canvas"
+    ></canvas>
+    </div>
   );
 };
 
