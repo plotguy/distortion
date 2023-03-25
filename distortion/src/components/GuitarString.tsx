@@ -4,9 +4,11 @@ import * as Tone from 'tone';
 type GuitarStringProps = {
   baseNote: string;
   pick: boolean;
+  distortion: number;
+  volume: number;
 };
 
-const GuitarString = ({ baseNote, pick }: GuitarStringProps) => {
+const GuitarString = ({ baseNote, pick, distortion, volume }: GuitarStringProps) => {
   const canvasRef = useRef<any>(null);
   const outputCanvasRef = useRef<any>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -59,7 +61,7 @@ const GuitarString = ({ baseNote, pick }: GuitarStringProps) => {
   };
 
   useEffect(() => {
-    gainRef.current = new Tone.Gain(0).toDestination();
+    gainRef.current = new Tone.Gain(volume).toDestination();
     monoSynthRef.current = new Tone.MonoSynth(
         {
             "oscillator": {
@@ -90,6 +92,10 @@ const GuitarString = ({ baseNote, pick }: GuitarStringProps) => {
         }
     ).connect(gainRef.current);
 
+    // Create a distortion effect
+    const distortionEffect = new Tone.Distortion(distortion).toDestination();
+    monoSynthRef.current.connect(distortionEffect);
+
     Tone.Transport.start();
     const analyser = Tone.context.createAnalyser();
     analyser.fftSize = 4096;
@@ -100,7 +106,7 @@ const GuitarString = ({ baseNote, pick }: GuitarStringProps) => {
       monoSynthRef.current?.dispose();
       gainRef.current?.dispose();
     };
-  }, [baseNote]);
+  }, [baseNote, distortion, volume]);
 
   const drawString = (canvas: any, ctx: any, position: any) => {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -136,7 +142,7 @@ const GuitarString = ({ baseNote, pick }: GuitarStringProps) => {
     drawString(canvasRef.current, ctx, { x, y });
 
     if (pick) {
-        monoSynthRef.current?.triggerAttackRelease(baseNote, "4n", "+0.1");
+        monoSynthRef.current?.triggerAttackRelease(baseNote, "4n", "+0.05");
     }
   };
 
