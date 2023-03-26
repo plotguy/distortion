@@ -61,7 +61,7 @@ const Pedal = ({ distortion, volume, setVolume, setDistortion } : PedalProps) =>
         turnOn(!on);
     }
     return (
-        <div className="flex flex-col items-center bg-yellow-400 p-8">
+        <div className="flex flex-col items-center bg-yellow-400 p-8 border-8 rounded border-yellow-900 ">
         <div className="flex flex-row">
             <Knob label={'Output'} value={volume} setValue={setVolume} />
             <Knob label={'Distortion'} value={distortion} setValue={setDistortion} />

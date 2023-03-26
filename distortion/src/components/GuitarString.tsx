@@ -31,7 +31,7 @@ const GuitarString = ({ baseNote, strum, distortion, volume }: GuitarStringProps
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
       ctx.lineWidth = 2;
-      ctx.strokeStyle = 'rgb(0, 50, 0, 0.3)';
+      ctx.strokeStyle = 'yellow';
 
       ctx.beginPath();
 
@@ -129,7 +129,7 @@ const GuitarString = ({ baseNote, strum, distortion, volume }: GuitarStringProps
     }
 
     ctx.lineWidth = 8;
-    ctx.strokeStyle = 'black';
+    ctx.strokeStyle = 'silver';
     ctx.stroke();
   };
 
@@ -189,7 +189,7 @@ const GuitarString = ({ baseNote, strum, distortion, volume }: GuitarStringProps
     <div className="flex flex-row">
     <canvas
       ref={canvasRef}
-      width="500"
+      width="400"
       height="70"
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
@@ -199,7 +199,7 @@ const GuitarString = ({ baseNote, strum, distortion, volume }: GuitarStringProps
     ></canvas>
     <canvas
       ref={outputCanvasRef}
-      width="500"
+      width="900"
       height="70"
       className="string-canvas"
     ></canvas>
