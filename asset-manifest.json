@@ -1,15 +1,15 @@
 {
   "files": {
-    "main.css": "/distortion/static/css/main.08f012bc.css",
-    "main.js": "/distortion/static/js/main.6a2b7c08.js",
+    "main.css": "/distortion/static/css/main.41a53769.css",
+    "main.js": "/distortion/static/js/main.a7b38bd6.js",
     "static/js/787.c68f8b8c.chunk.js": "/distortion/static/js/787.c68f8b8c.chunk.js",
     "index.html": "/distortion/index.html",
-    "main.08f012bc.css.map": "/distortion/static/css/main.08f012bc.css.map",
-    "main.6a2b7c08.js.map": "/distortion/static/js/main.6a2b7c08.js.map",
+    "main.41a53769.css.map": "/distortion/static/css/main.41a53769.css.map",
+    "main.a7b38bd6.js.map": "/distortion/static/js/main.a7b38bd6.js.map",
     "787.c68f8b8c.chunk.js.map": "/distortion/static/js/787.c68f8b8c.chunk.js.map"
   },
   "entrypoints": [
-    "static/css/main.08f012bc.css",
-    "static/js/main.6a2b7c08.js"
+    "static/css/main.41a53769.css",
+    "static/js/main.a7b38bd6.js"
   ]
 }
