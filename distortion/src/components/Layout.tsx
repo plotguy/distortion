@@ -5,7 +5,9 @@ import "react-toggle/style.css"; // for ES6 modules
 import RadioButton from "./RadioButton";
 
 const GuitarInput = () => {
-  const [playMode, setPlayMode] = useState<"strum" | "single">("single");
+  const [playMode, setPlayMode] = useState<"strum" | "single" | "fret">(
+    "single"
+  );
   const [on, turnOn] = useState<boolean>(true);
 
   const handleToggle = () => {
@@ -49,31 +51,82 @@ const GuitarInput = () => {
           label="👋🏼 Strum mode"
           value="strum"
         />
+        <RadioButton
+          changed={radioChangeHandler}
+          id="3"
+          isSelected={playMode === "fret"}
+          label="🎸 Fret mode"
+          value="fret"
+        />
       </div>
-      <div className="flex flex-col">
+      <div className="flex flex-col mt-4">
         <GuitarString
           baseNote={"E2"}
-          strum={playMode === "strum"}
+          playMode={playMode}
           distortion={activeDistortion}
           volume={activeVolume}
+          fretKeys={[
+            ["1", "E2"],
+            ["2", "F2"],
+            ["3", "G2"],
+            ["4", "A2"],
+            ["5", "B2"],
+            ["6", "C3"],
+            ["7", "D3"],
+            ["8", "E3"],
+            ["9", "F3"],
+            ["0", "G3"],
+          ]}
         />
         <GuitarString
           baseNote={"A3"}
-          strum={playMode === "strum"}
+          playMode={playMode}
           distortion={activeDistortion}
           volume={activeVolume}
+          fretKeys={[
+            ["Q", "A3"],
+            ["W", "B3"],
+            ["E", "C4"],
+            ["R", "D4"],
+            ["T", "E4"],
+            ["Y", "F4"],
+            ["U", "G4"],
+            ["I", "A4"],
+            ["O", "B4"],
+            ["P", "C5"],
+          ]}
         />
         <GuitarString
           baseNote={"D3"}
-          strum={playMode === "strum"}
+          playMode={playMode}
           distortion={activeDistortion}
           volume={activeVolume}
+          fretKeys={[
+            ["A", "D3"],
+            ["S", "E3"],
+            ["D", "F3"],
+            ["F", "G3"],
+            ["G", "A3"],
+            ["H", "B3"],
+            ["J", "C4"],
+            ["K", "D4"],
+            ["L", "E4"],
+          ]}
         />
         <GuitarString
           baseNote={"G3"}
-          strum={playMode === "strum"}
+          playMode={playMode}
           distortion={activeDistortion}
           volume={activeVolume}
+          fretKeys={[
+            ["Z", "G3"],
+            ["X", "A3"],
+            ["C", "B3"],
+            ["V", "C4"],
+            ["B", "D4"],
+            ["N", "E4"],
+            ["M", "F4"],
+          ]}
         />
       </div>
     </div>

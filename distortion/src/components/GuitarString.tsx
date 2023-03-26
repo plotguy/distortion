@@ -3,22 +3,27 @@ import * as Tone from "tone";
 
 type GuitarStringProps = {
   baseNote: string;
-  strum: boolean;
+  playMode: string;
   distortion: number;
   volume: number;
+  fretKeys: any;
 };
 
 const GuitarString = ({
   baseNote,
-  strum,
+  playMode,
   distortion,
   volume,
+  fretKeys,
 }: GuitarStringProps) => {
   const guitarCanvasRef = useRef<any>(null);
   const inputCanvasRef = useRef<any>(null);
   const outputCanvasRef = useRef<any>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+  const [pressedKey, setPressedKey] = useState<string | null>(null);
+
+  const fretKeyToNote = new Map<string, string>(fretKeys);
 
   const monoSynthRef = useRef<Tone.MonoSynth | null>(null);
   const volumeRef = useRef<Tone.Volume | null>(null);
@@ -34,6 +39,30 @@ const GuitarString = ({
     const dataArray = new Uint8Array(bufferLength);
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // set up a listener to listen for keyboard events, and when a
+    // key in fretKeyToNote is pressed, play the corresponding note
+    const keyDownHandler = (e: any) => {
+      const note = fretKeyToNote.get(e.key.toUpperCase());
+      if (note) {
+        setPressedKey(e.key.toUpperCase());
+        monoSynthRef.current?.triggerAttackRelease(note, "4n", "+0.1");
+      }
+    };
+    // Add a new keyUpHandler function
+    const keyUpHandler = (e: any) => {
+      if (fretKeyToNote.has(e.key.toUpperCase())) {
+        // setTimeout
+        setTimeout(() => {
+          setPressedKey(null); // Reset the pressedKey state
+        }, 300);
+      }
+    };
+
+    // register the keyDownHandler listener
+    document.addEventListener("keydown", keyDownHandler);
+    // register the keyUpHandler listener
+    document.addEventListener("keyup", keyUpHandler);
 
     const draw = () => {
       analyser.getByteTimeDomainData(dataArray);
@@ -131,7 +160,7 @@ const GuitarString = ({
       monoSynthRef.current?.dispose();
       volumeRef.current?.dispose();
     };
-  }, [baseNote, distortion, volume, strum]);
+  }, [baseNote, distortion, volume, playMode]);
 
   const drawString = useCallback(
     (canvas: any, ctx: any, position: any) => {
@@ -139,7 +168,7 @@ const GuitarString = ({
       ctx.beginPath();
       ctx.moveTo(0, canvas.height / 2);
 
-      if (isDragging || strum) {
+      if (isDragging || playMode === "strum") {
         ctx.quadraticCurveTo(
           position.x,
           position.y,
@@ -154,11 +183,11 @@ const GuitarString = ({
       ctx.strokeStyle = "#e4e9ed";
       ctx.stroke();
     },
-    [isDragging, strum]
+    [isDragging, playMode]
   );
 
   const handleMouseMove = (e: any) => {
-    if (!isDragging && !strum) return;
+    if (!isDragging && !(playMode === "strum")) return;
 
     const rect = guitarCanvasRef.current?.getBoundingClientRect();
     const x = e.clientX - rect.left;
@@ -169,7 +198,7 @@ const GuitarString = ({
     const ctx = guitarCanvasRef.current.getContext("2d");
     drawString(guitarCanvasRef.current, ctx, { x, y });
 
-    if (strum) {
+    if (playMode === "strum") {
       monoSynthRef.current?.triggerAttackRelease(baseNote, "4n", "+0.05");
     }
   };
@@ -192,7 +221,7 @@ const GuitarString = ({
 
   const handleMouseUp = () => {
     // check if the mouseup is triggered by mouseleave
-    if (!isDragging && !strum) return;
+    if (!isDragging && !(playMode === "strum")) return;
     setIsDragging(false);
 
     const dragDistance = Math.abs(
@@ -203,7 +232,7 @@ const GuitarString = ({
     // map volumeDelta (which goes from 0 to 1) to a scale from -20 to 20
     const volumeDelta = volumePct * 40 - 20;
 
-    if (!strum) {
+    if (!(playMode === "strum")) {
       if (volumeRef.current) {
         volumeRef.current.volume.value = volumeDelta;
       }
@@ -217,30 +246,56 @@ const GuitarString = ({
   }, [isDragging, mousePosition, drawString]);
 
   return (
-    <div className="flex flex-row">
-      <canvas
-        ref={guitarCanvasRef}
-        width="400"
-        height="70"
-        onMouseDown={handleMouseDown}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
-        onMouseLeave={handleMouseUp}
-        className={`string-canvas ${strum ? "strum-cursor" : "finger-cursor"}`}
-      ></canvas>
-      <canvas
-        ref={inputCanvasRef}
-        width="300"
-        height="70"
-        className="string-canvas"
-      ></canvas>
-      <canvas
-        ref={outputCanvasRef}
-        width="600"
-        height="70"
-        className="string-canvas"
-      ></canvas>
-    </div>
+    <>
+      <div className="flex flex-row">
+        {playMode === "fret" && (
+          <div className="absolute flex flex-row">
+            {fretKeys.map((fret: any, index: number) => {
+              const isKeyPressed = fret[0] === pressedKey;
+              return (
+                <div className="flex flex-col">
+                  <span
+                    key={index}
+                    className={`text-white font-mono mx-2 ${
+                      isKeyPressed ? "text-2xl transition duration-100" : ""
+                    }`}
+                  >
+                    {fret[1]}
+                  </span>
+                  <div className="text-white mx-2">|</div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+      <div className="flex flex-row">
+        <canvas
+          ref={guitarCanvasRef}
+          width="400"
+          height="70"
+          onMouseDown={handleMouseDown}
+          onMouseMove={handleMouseMove}
+          onMouseUp={handleMouseUp}
+          onMouseLeave={handleMouseUp}
+          className={`string-canvas ${
+            playMode === "strum" ? "strum-cursor" : "finger-cursor"
+          }`}
+        ></canvas>
+        <canvas
+          ref={inputCanvasRef}
+          width="300"
+          height="70"
+          className="string-canvas"
+        ></canvas>
+        <canvas
+          ref={outputCanvasRef}
+          width="600"
+          height="70"
+          className="string-canvas"
+        ></canvas>
+      </div>
+    </>
   );
 };
 
