@@ -1,5 +1,5 @@
 import './App.css';
-import GuitarInput from './components/GuitarInput';
+import Layout from './components/Layout';
 
 function App() {
   return (
@@ -8,7 +8,7 @@ function App() {
     <span className="text-yellow-500 text-5xl font-extralight mb-8 ml-36">Distortion</span>
     
     <div className="flex h-screen flex-col items-center ">
-       <GuitarInput />
+       <Layout />
     </div>
     </div>
   );
