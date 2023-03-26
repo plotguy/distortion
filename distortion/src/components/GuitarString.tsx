@@ -21,7 +21,9 @@ const GuitarString = ({
   const outputCanvasRef = useRef<any>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
-  const [pressedKey, setPressedKey] = useState<string | null>(null);
+  const [pressedKeyMap, setPressedKeyMap] = useState<Map<string, boolean>>(
+    new Map()
+  );
 
   const fretKeyToNote = new Map<string, string>(fretKeys);
 
@@ -45,7 +47,11 @@ const GuitarString = ({
     const keyDownHandler = (e: any) => {
       const note = fretKeyToNote.get(e.key.toUpperCase());
       if (note) {
-        setPressedKey(e.key.toUpperCase());
+        setPressedKeyMap((prevMap) => {
+            const newMap = new Map(prevMap);
+            newMap.set(e.key.toUpperCase(), true);
+            return newMap;
+        });
         monoSynthRef.current?.triggerAttackRelease(note, "4n", "+0.1");
       }
     };
@@ -54,7 +60,11 @@ const GuitarString = ({
       if (fretKeyToNote.has(e.key.toUpperCase())) {
         // setTimeout
         setTimeout(() => {
-          setPressedKey(null); // Reset the pressedKey state
+        setPressedKeyMap((prevMap) => {
+            const newMap = new Map(prevMap);
+            newMap.set(e.key.toUpperCase(), false);
+            return newMap;
+        });
         }, 300);
       }
     };
@@ -251,13 +261,13 @@ const GuitarString = ({
         {playMode === "fret" && (
           <div className="absolute flex flex-row">
             {fretKeys.map((fret: any, index: number) => {
-              const isKeyPressed = fret[0] === pressedKey;
+              const isKeyPressed = pressedKeyMap.get(fret[0]);
               return (
                 <div className="flex flex-col">
                   <span
                     key={index}
-                    className={`text-white font-mono mx-2 ${
-                      isKeyPressed ? "text-2xl transition duration-100" : ""
+                    className={`text-white font-mono px-2 ${
+                      isKeyPressed ? "text-2xl transition duration-100 text-yellow-400 transition duration-100" : ""
                     }`}
                   >
                     {fret[1]}
