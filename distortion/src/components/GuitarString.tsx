@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState } from 'react';
+import { useRef, useEffect, useState, useCallback } from 'react';
 import * as Tone from 'tone';
 
 type GuitarStringProps = {
@@ -9,17 +9,18 @@ type GuitarStringProps = {
 };
 
 const GuitarString = ({ baseNote, strum, distortion, volume }: GuitarStringProps) => {
-  const canvasRef = useRef<any>(null);
+  const guitarCanvasRef = useRef<any>(null);
+  const inputCanvasRef = useRef<any>(null);
   const outputCanvasRef = useRef<any>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
 
   const monoSynthRef = useRef<Tone.MonoSynth | null>(null);
-  const gainRef = useRef<Tone.Gain | null>(null);
+  const volumeRef = useRef<Tone.Volume | null>(null);
 
 
-  const drawSineWave = (analyser: AnalyserNode) => {
-    const canvas = outputCanvasRef.current;
+  const drawSineWave = (analyser: AnalyserNode, canvasRef: any, input: boolean) => {
+    const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
     const bufferLength = analyser.frequencyBinCount;
     const dataArray = new Uint8Array(bufferLength);
@@ -31,16 +32,26 @@ const GuitarString = ({ baseNote, strum, distortion, volume }: GuitarStringProps
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
       ctx.lineWidth = 2;
-      ctx.strokeStyle = 'yellow';
+      ctx.strokeStyle = input ? '#ecf0f1': 'yellow';
 
       ctx.beginPath();
+
+
+      const mid = canvas.height / 2;
 
       const sliceWidth = (canvas.width * 1.0) / bufferLength;
       let x = 0;
 
       for (let i = 0; i < bufferLength; i++) {
         const v = dataArray[i] / 128.0;
-        const y = v * canvas.height / 2;
+
+        let y = v * mid;
+
+        // Reduce the amplitude of y but still make it centered
+        // around the middle of the canvas
+        if (input) {
+          y = (y - mid) * 0.5 + mid;
+        }
 
         if (i === 0) {
           ctx.moveTo(x, y);
@@ -51,7 +62,7 @@ const GuitarString = ({ baseNote, strum, distortion, volume }: GuitarStringProps
         x += sliceWidth;
       }
 
-      ctx.lineTo(canvas.width, canvas.height / 2);
+      ctx.lineTo(canvas.width, mid);
       ctx.stroke();
 
       requestAnimationFrame(draw);
@@ -61,7 +72,7 @@ const GuitarString = ({ baseNote, strum, distortion, volume }: GuitarStringProps
   };
 
   useEffect(() => {
-    gainRef.current = new Tone.Gain(volume).toDestination();
+    volumeRef.current = new Tone.Volume(volume).toDestination();
     monoSynthRef.current = new Tone.MonoSynth(
         {
             "oscillator": {
@@ -90,7 +101,7 @@ const GuitarString = ({ baseNote, strum, distortion, volume }: GuitarStringProps
                 "octaves": 4.4
             }
         }
-    ).connect(gainRef.current);
+    ).connect(volumeRef.current);
 
     // Create a distortion effect
     const distortionEffect = new Tone.Distortion(distortion).toDestination();
@@ -100,19 +111,20 @@ const GuitarString = ({ baseNote, strum, distortion, volume }: GuitarStringProps
     const analyser = Tone.context.createAnalyser();
     analyser.fftSize = 4096;
     monoSynthRef.current.connect(analyser);
-    drawSineWave(analyser);
-    drawString(canvasRef.current, canvasRef.current.getContext('2d'), {
+    drawSineWave(analyser, inputCanvasRef, true);
+    drawSineWave(analyser, outputCanvasRef, false);
+    drawString(guitarCanvasRef.current, guitarCanvasRef.current.getContext('2d'), {
         x: 0,
         y: 0,
     });
 
     return () => {
       monoSynthRef.current?.dispose();
-      gainRef.current?.dispose();
+      volumeRef.current?.dispose();
     };
   }, [baseNote, distortion, volume, strum]);
 
-  const drawString = (canvas: any, ctx: any, position: any) => {
+  const drawString = useCallback((canvas: any, ctx: any, position: any) => {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.beginPath();
     ctx.moveTo(0, canvas.height / 2);
@@ -129,21 +141,21 @@ const GuitarString = ({ baseNote, strum, distortion, volume }: GuitarStringProps
     }
 
     ctx.lineWidth = 8;
-    ctx.strokeStyle = 'silver';
+    ctx.strokeStyle = '#e4e9ed';
     ctx.stroke();
-  };
+  }, [isDragging, strum]);
 
   const handleMouseMove = (e: any) => {
     if (!isDragging && !strum) return;
 
-    const rect = canvasRef.current?.getBoundingClientRect();
+    const rect = guitarCanvasRef.current?.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
 
     setMousePosition({ x, y });
 
-    const ctx = canvasRef.current.getContext('2d');
-    drawString(canvasRef.current, ctx, { x, y });
+    const ctx = guitarCanvasRef.current.getContext('2d');
+    drawString(guitarCanvasRef.current, ctx, { x, y });
 
     if (strum) {
         monoSynthRef.current?.triggerAttackRelease(baseNote, "4n", "+0.05");
@@ -152,12 +164,12 @@ const GuitarString = ({ baseNote, strum, distortion, volume }: GuitarStringProps
 
   const handleMouseDown = (e: any) => {
   
-    const rect = canvasRef.current.getBoundingClientRect();
+    const rect = guitarCanvasRef.current.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
 
     // if the y is not in the middle of the canvas, return
-    if (y < canvasRef.current.height / 2 - 10 || y > canvasRef.current.height / 2 + 10) return;
+    if (y < guitarCanvasRef.current.height / 2 - 10 || y > guitarCanvasRef.current.height / 2 + 10) return;
 
 
     setMousePosition({ x, y });
@@ -170,25 +182,29 @@ const GuitarString = ({ baseNote, strum, distortion, volume }: GuitarStringProps
     if (!isDragging && !strum) return;
     setIsDragging(false);
 
-    const dragDistance = Math.abs(mousePosition.y - canvasRef.current.height / 2);
-    const volume = Math.min(dragDistance / 100, 1);
-    if (gainRef.current) {
-        gainRef.current.gain.value = volume;
-    }
+    const dragDistance = Math.abs(mousePosition.y - guitarCanvasRef.current.height / 2);
+    const volumePct= dragDistance / 35;
+
+    // map volumeDelta (which goes from 0 to 1) to a scale from -20 to 20
+    const volumeDelta = volumePct * 40 - 20;
+
     if (!strum) {
+        if (volumeRef.current) {
+            volumeRef.current.volume.value = volumeDelta;
+        }
         monoSynthRef.current?.triggerAttackRelease(baseNote, "4n", "+0.1");
     }
   };
 
   useEffect(() => {
-    const ctx = canvasRef.current.getContext('2d');
-    drawString(canvasRef.current, ctx, mousePosition);
-  }, [isDragging, mousePosition]);
+    const ctx = guitarCanvasRef.current.getContext('2d');
+    drawString(guitarCanvasRef.current, ctx, mousePosition);
+  }, [isDragging, mousePosition, drawString]);
 
   return (
     <div className="flex flex-row">
     <canvas
-      ref={canvasRef}
+      ref={guitarCanvasRef}
       width="400"
       height="70"
       onMouseDown={handleMouseDown}
@@ -198,8 +214,14 @@ const GuitarString = ({ baseNote, strum, distortion, volume }: GuitarStringProps
       className={`string-canvas ${ strum ? 'strum-cursor' : 'finger-cursor'}`}
     ></canvas>
     <canvas
+      ref={inputCanvasRef}
+      width="300"
+      height="70"
+      className="string-canvas"
+    ></canvas>
+    <canvas
       ref={outputCanvasRef}
-      width="900"
+      width="600"
       height="70"
       className="string-canvas"
     ></canvas>

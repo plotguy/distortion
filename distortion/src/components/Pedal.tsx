@@ -38,10 +38,10 @@ const ToggleSwitch = ({ on, turnOn } : ToggleSwitchProps) => {
     return (
     <>
     <div className="mt-16 flex flex-col items-center">
-        <div className={`h-4 w-4 mb-4 rounded-full ${on ? 'bg-red-500' : 'bg-gray-400'} border border-black`}></div>
+        <div className={`h-4 w-4 mb-4 rounded-full ${on ? 'bg-red-500' : 'bg-gray-400'} border-2 border-gray-700`}></div>
     <button 
     onClick={turnOn}
-    className={`h-12 w-12 rounded-full ${on ? 'bg-gray-500' : 'bg-gray-300'} border border-gray-700 hover:bg-gray-400`}></button>
+    className={`h-12 w-12 rounded-full ${on ? 'bg-gray-500' : 'bg-gray-300'} border-4 border-gray-700 hover:bg-gray-400`}></button>
     </div>
     </>
     )
@@ -52,15 +52,14 @@ interface PedalProps {
     volume: number;
     setVolume: (value: number) => void;
     setDistortion: (value: number) => void;
+    on: boolean;
+    handleToggle: () => void;
 }
 
-const Pedal = ({ distortion, volume, setVolume, setDistortion } : PedalProps) => {
-    const [on, turnOn] = useState(false);
+const Pedal = ({ distortion, volume, setVolume, setDistortion, on, handleToggle } : PedalProps) => {
 
-    const handleToggle = () => {
-        turnOn(!on);
-    }
     return (
+        
         <div className="flex flex-col items-center bg-yellow-400 p-8 border-8 rounded border-yellow-900 ">
         <div className="flex flex-row">
             <Knob label={'Output'} value={volume} setValue={setVolume} />
